@@ -109,7 +109,14 @@ struct GroupDecision
     positive::BitVector
 end
 
-_query_probability(s::SelectiveSampler, pred::Prediction) = clamp(Float64(query_probability(s.policy, pred)), 0.0, 1.0)
+# A prediction that is not a number (e.g. from non-finite features) means the
+# surrogate cannot tell; policies would read it as a confident negative, as
+# every comparison with NaN is false. Ask the oracle instead.
+function _query_probability(s::SelectiveSampler, pred::Prediction)
+    isfinite(pred.p_positive) || return 1.0
+    p = Float64(query_probability(s.policy, pred))
+    return isnan(p) ? 1.0 : clamp(p, 0.0, 1.0)
+end
 
 function _flip!(s::SelectiveSampler, p::Float64, n::Int)
     q = p >= 1 || (p > 0 && rand(s.rng) < p)

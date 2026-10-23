@@ -181,10 +181,16 @@ end
 Condition the model on the oracle's answer `y` for features `x`. `weight`
 scales the observation's influence (e.g. an importance weight `1/p`);
 only the `Gaussian` likelihood supports `weight ≠ 1`.
+
+Throws an `ArgumentError` for non-finite features or a non-finite `y`: a
+single `NaN` would otherwise turn the posterior, and every prediction
+after it, into `NaN`.
 """
 function update!(m::OnlineBayes, x::AbstractVector, y::Real; weight::Real = 1.0)
     weight > 0 || throw(ArgumentError("weight must be positive"))
+    isfinite(y) || throw(ArgumentError("non-finite label $y"))
     _load!(m, x)
+    all(isfinite, m.x) || throw(ArgumentError("non-finite features"))
     m.forget < 1 && _relax!(m)
     mean, v = _moments!(m)
     _update!(m, m.lik, mean, v, y, Float64(weight))

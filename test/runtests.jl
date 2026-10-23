@@ -211,6 +211,19 @@ end
     end
     @test predict(s.model, [1.0]).p_positive > 0.9
     @test_throws ArgumentError SelectiveSampler(BayesianProbit(1), Always(); importance_weighting = true)
+
+    # non-finite inputs never poison the model, and an unknown prediction is queried
+    m = BayesianLinear(2)
+    update!(m, [1.0, 0.0], 1.0)
+    μ = copy(m.μ)
+    @test_throws ArgumentError update!(m, [NaN, 0.0], 1.0)
+    @test_throws ArgumentError update!(m, [Inf, 0.0], 1.0)
+    @test_throws ArgumentError update!(m, [1.0, 0.0], NaN)
+    @test m.μ == μ && m.nupdates == 1
+    s = SelectiveSampler(m, Never())
+    d = decide(s, [NaN, 0.0])
+    @test isnan(d.prediction.p_positive) && d.query && d.p == 1
+    @test decide(s, [1.0, 0.0]).query == false
 end
 
 @testset "replay and unbiased cost estimates" begin
