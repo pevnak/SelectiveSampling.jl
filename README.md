@@ -104,12 +104,13 @@ a coin. Randomized decisions are what make the cost estimates in
 Custom policies subtype `Policy` and implement `query_probability(policy,
 prediction)` (and `record!(policy, queried)` if they keep state).
 
-## Groups
+## Groups and batches
 
 When one oracle call labels several samples at once, `decide(sampler, X)`
 on a matrix decides for its columns jointly: the group is queried with the
 largest probability of any member, and `observe!(sampler, X, ys, d)` learns
-from all of them.
+from all of them. `decide_each(sampler, X)` instead decides for every
+column independently, with the predictions computed in one batch.
 
 ## Cost estimates
 

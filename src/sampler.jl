@@ -150,6 +150,20 @@ function decide(s::SelectiveSampler, X::AbstractMatrix)
     return GroupDecision(_flip!(s, p, length(preds)), p, preds, positive)
 end
 
+"""
+    decide_each(sampler, X::AbstractMatrix) -> Vector{Decision}
+
+Independent decisions for the columns of `X`, one coin flip each, with
+the predictions computed together (much faster than `decide` column by
+column for a full-covariance model). Unlike `decide(sampler, X)`, the
+columns do not have to be queried together.
+"""
+function decide_each(s::SelectiveSampler, X::AbstractMatrix)
+    preds = predict(s.model, X; s.threshold)
+    return [Decision(_flip!(s, p, 1), p, pred, pred.p_positive >= s.decision_p)
+            for pred in preds for p in (_query_probability(s, pred),)]
+end
+
 _target(::Gaussian, y, threshold) = y
 _target(::Probit, y, threshold) = y > threshold
 

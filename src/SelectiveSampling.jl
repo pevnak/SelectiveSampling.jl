@@ -38,7 +38,7 @@ export OnlineBayes, BayesianLinear, BayesianProbit, Prediction, predict, update!
 export Policy, query_probability, record!,
        Always, Never, Band, EpistemicStd, Margin, Explore, AnyOf, TargetRate, WarmUp
 
-export SelectiveSampler, Decision, GroupDecision, decide, observe!, reset_stats!
+export SelectiveSampler, Decision, GroupDecision, decide, decide_each, observe!, reset_stats!
 
 export replay, ReplayResult, metrics
 

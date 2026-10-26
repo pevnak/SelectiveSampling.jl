@@ -204,6 +204,23 @@ end
     observe!(s, X, [0.0, 1.0], g)
     @test s.model.nupdates == n0 + 2
 
+    # decide_each: independent decisions, batched predictions, same statistics
+    rng2 = Xoshiro(12)
+    s = SelectiveSampler(BayesianLinear(d), Explore(0.3, Band(; lo = 0.5)); threshold = 0.0, rng = rng2)
+    foreach(_ -> update!(s.model, randn(rng2, d), randn(rng2)), 1:30)
+    X = randn(rng2, d, 50)
+    ds = decide_each(s, X)
+    @test length(ds) == 50 && s.stats.n_seen == 50 && s.stats.n_decisions == 50
+    @test all(dd.p in (0.3, 1.0) for dd in ds)
+    singles = [predict(s.model, x; threshold = 0.0) for x in eachcol(X)]
+    @test all(ds[j].prediction.p_positive ≈ singles[j].p_positive for j in 1:50)
+    @test all(ds[j].positive == (singles[j].p_positive >= 0.5) for j in 1:50)
+    @test any(dd -> dd.query, ds) && any(dd -> !dd.query, ds)
+    foreach(j -> observe!(s, X[:, j], 1.0, ds[j]), findall(dd -> dd.query, ds))
+    @test s.stats.n_labels == count(dd -> dd.query, ds)
+    m = BayesianLinear(2)
+    @test decide_each(SelectiveSampler(m, Always()), zeros(2, 0)) == Decision[]
+
     # probit sampler binarizes the oracle output at the threshold
     s = SelectiveSampler(BayesianProbit(1; intercept = false), Always(); threshold = 2.0)
     for _ in 1:30
